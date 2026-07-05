@@ -1,0 +1,44 @@
+name: 每日健康资讯
+
+on:
+  schedule:
+    - cron: "0 1 * * *"  # UTC 1:00 = CST 9:00
+  workflow_dispatch:  # 手动触发
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 生成健康资讯日报
+        run: |
+          TZ=Asia/Shanghai python3 generate_report.py
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      
+      - name: 提交报告到仓库
+        run: |
+          git config user.name "健康资讯Bot"
+          git config user.email "bot@health-news.local"
+          git add reports/ public/index.html
+          git diff --staged --quiet || git commit -m "📋 $(date '+%Y-%m-%d') 健康资讯日报"
+          git push || echo "无变更"
