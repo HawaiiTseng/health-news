@@ -2,8 +2,14 @@ name: 每日健康资讯
 
 on:
   schedule:
-    - cron: "0 1 * * *"  # UTC 1:00 = CST 9:00
-  workflow_dispatch:  # 手动触发
+    - cron: "0 1 * * *"    # UTC 1:00 = CST 9:00（主触发）
+    - cron: "0 3 * * *"    # UTC 3:00 = CST 11:00（备份触发，防延迟）
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'generate_report.py'
+      - '.github/workflows/daily.yml'
 
 permissions:
   contents: write
@@ -40,5 +46,5 @@ jobs:
           git config user.name "健康资讯Bot"
           git config user.email "bot@health-news.local"
           git add reports/ public/index.html
-          git diff --staged --quiet || git commit -m "📋 $(date '+%Y-%m-%d') 健康资讯日报"
+          git diff --staged --quiet || git commit -m "📋 $(TZ=Asia/Shanghai date '+%Y-%m-%d') 健康资讯日报"
           git push || echo "无变更"
